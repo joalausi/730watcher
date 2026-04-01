@@ -1,0 +1,62 @@
+name: steamwtch
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_webhook:
+        description: Send only a test Discord webhook
+        required: false
+        default: false
+        type: boolean
+  schedule:
+    # каждые 5 минут, но со сдвигом от начала часа
+    - cron: '2,7,12,17,22,27,32,37,42,47,52,57 * * * *'
+
+permissions:
+  contents: write
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.ref_name }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install --no-save steam-user dotenv
+
+      - name: Run watcher
+        env:
+          STEAM_APP_ID: ${{ vars.STEAM_APP_ID }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          DISCORD_MENTION: ${{ secrets.DISCORD_MENTION }}
+          NOTIFY_ANY_CHANGE: 'false'
+          TEST_WEBHOOK: ${{ github.event_name == 'workflow_dispatch' && inputs.test_webhook || 'false' }}
+        run: node steamwtch.js
+
+      - name: Commit state back to repo
+        run: |
+          if [ ! -f steam-watch-state.json ]; then
+            echo "No state file"
+            exit 0
+          fi
+
+          if [ -z "$(git status --porcelain -- steam-watch-state.json)" ]; then
+            echo "No state changes"
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add steam-watch-state.json
+          git commit -m "chore: update steam-watch state"
+          git push

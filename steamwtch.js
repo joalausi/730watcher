@@ -7,23 +7,17 @@ const SteamUser = require('steam-user');
 const APP_ID = Number(process.env.STEAM_APP_ID || 730);
 const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
 const DISCORD_MENTION = (process.env.DISCORD_MENTION || '').trim();
-const POLL_INTERVAL_MS = Math.max(5000, Number(process.env.POLL_INTERVAL_MS || 15000));
 const NOTIFY_ANY_CHANGE =
   String(process.env.NOTIFY_ANY_CHANGE || 'false').toLowerCase() === 'true';
+const TEST_WEBHOOK =
+  String(process.env.TEST_WEBHOOK || 'false').toLowerCase() === 'true';
 
 const STATE_FILE = path.join(__dirname, 'steam-watch-state.json');
 
 if (!DISCORD_WEBHOOK_URL) {
-  console.error('Не задан DISCORD_WEBHOOK_URL');
+  console.error('DISCORD_WEBHOOK_URL is required');
   process.exit(1);
 }
-
-const user = new SteamUser({
-  autoRelogin: true,
-});
-
-let pollTimer = null;
-let isPolling = false;
 
 function log(...args) {
   console.log(new Date().toISOString(), '-', ...args);
@@ -122,148 +116,147 @@ function extractSnapshot(appData) {
   };
 }
 
-async function fetchAppInfo() {
+async function fetchAppInfo(user) {
   const result = await user.getProductInfo([APP_ID], [], true);
   const appData = result?.apps?.[APP_ID];
 
   if (!appData) {
-    throw new Error(`Не удалось получить appinfo для appid ${APP_ID}`);
+    throw new Error(`Failed to fetch appinfo for appid=${APP_ID}`);
   }
 
   return appData;
 }
 
-async function initializeState() {
-  const appData = await fetchAppInfo();
+async function bootstrap(user) {
+  const changes = await user.getProductChanges(0);
+  const currentGlobalChangenumber = Number(changes.currentChangenumber || 0);
+
+  const appData = await fetchAppInfo(user);
   const snapshot = extractSnapshot(appData);
 
-  const state = {
+  await writeState({
     initialized: true,
-    lastGlobalChangenumber: snapshot.appChangenumber || 0,
+    lastGlobalChangenumber: currentGlobalChangenumber,
     lastAppChangenumber: snapshot.appChangenumber,
     lastBuildId: snapshot.buildId,
     lastName: snapshot.name,
     lastSeenAt: new Date().toISOString(),
-  };
-
-  await writeState(state);
+  });
 
   log(
-    `Инициализация: ${snapshot.name}, appid=${APP_ID}, appChangenumber=${snapshot.appChangenumber}, buildid=${snapshot.buildId}`
+    `Bootstrapped: ${snapshot.name}, global=${currentGlobalChangenumber}, app=${snapshot.appChangenumber}, build=${snapshot.buildId}`
   );
 }
 
-async function pollOnce() {
-  if (isPolling) return;
-  isPolling = true;
-
-  try {
-    const state = await readState();
-
-    if (!state.initialized) {
-      await initializeState();
-      return;
-    }
-
-    const changes = await user.getProductChanges(state.lastGlobalChangenumber || 0);
-    const currentGlobalChangenumber = Number(changes.currentChangenumber || 0);
-    const appChanges = Array.isArray(changes.appChanges) ? changes.appChanges : [];
-
-    if (!currentGlobalChangenumber || currentGlobalChangenumber === state.lastGlobalChangenumber) {
-      return;
-    }
-
-    const targetChanged = appChanges.some((x) => Number(x.appid) === APP_ID);
-
-    if (!targetChanged) {
-      state.lastGlobalChangenumber = currentGlobalChangenumber;
-      state.lastSeenAt = new Date().toISOString();
-      await writeState(state);
-      log(`Есть новые changelist'ы, но appid=${APP_ID} не менялся`);
-      return;
-    }
-
-    const appData = await fetchAppInfo();
-    const snapshot = extractSnapshot(appData);
-
-    const buildChanged =
-      snapshot.buildId !== null && snapshot.buildId !== state.lastBuildId;
-
-    const appChangeChanged =
-      snapshot.appChangenumber !== null &&
-      snapshot.appChangenumber !== state.lastAppChangenumber;
-
-    const shouldNotify =
-      buildChanged || (NOTIFY_ANY_CHANGE && appChangeChanged);
-
-    if (shouldNotify) {
-      const mentionPrefix = DISCORD_MENTION ? `${DISCORD_MENTION} ` : '';
-      const lines = [
-        `${mentionPrefix}обнаружено обновление Steam для **${snapshot.name}**`,
-        `**appid:** \`${APP_ID}\``,
-        `**app changenumber:** \`${snapshot.appChangenumber ?? 'n/a'}\``,
-        `**global changenumber:** \`${currentGlobalChangenumber}\``,
-        `**buildid:** \`${snapshot.buildId ?? 'n/a'}\``,
-        `**предыдущий buildid:** \`${state.lastBuildId ?? 'n/a'}\``,
-        `**ветки:** ${snapshot.branches.length ? snapshot.branches.map((x) => `\`${x}\``).join(', ') : 'n/a'}`,
-      ];
-
-      if (snapshot.timeUpdatedIso) {
-        lines.push(`**public updated:** ${snapshot.timeUpdatedIso}`);
-      }
-
-      await sendDiscordMessage(lines.join('\n'));
-      log(
-        `Webhook sent: ${snapshot.name}, appChangenumber=${snapshot.appChangenumber}, buildid=${snapshot.buildId}`
-      );
-    } else {
-      log(
-        `Изменение замечено, но уведомление пропущено: appChangenumber=${snapshot.appChangenumber}, buildid=${snapshot.buildId}`
-      );
-    }
-
-    await writeState({
-      initialized: true,
-      lastGlobalChangenumber: currentGlobalChangenumber,
-      lastAppChangenumber: snapshot.appChangenumber,
-      lastBuildId: snapshot.buildId,
-      lastName: snapshot.name,
-      lastSeenAt: new Date().toISOString(),
-    });
-  } catch (err) {
-    console.error('pollOnce error:', err);
-  } finally {
-    isPolling = false;
+async function runWatcher(user) {
+  if (TEST_WEBHOOK) {
+    const prefix = DISCORD_MENTION ? `${DISCORD_MENTION} ` : '';
+    await sendDiscordMessage(
+      `${prefix}тестовый webhook: GitHub Actions и Discord настроены`
+    );
+    log('Test webhook sent');
+    return;
   }
+
+  const state = await readState();
+
+  if (!state.initialized) {
+    await bootstrap(user);
+    return;
+  }
+
+  const changes = await user.getProductChanges(state.lastGlobalChangenumber || 0);
+  const currentGlobalChangenumber = Number(changes.currentChangenumber || 0);
+
+  if (!currentGlobalChangenumber || currentGlobalChangenumber === state.lastGlobalChangenumber) {
+    log('No global product changes');
+    return;
+  }
+
+  const appData = await fetchAppInfo(user);
+  const snapshot = extractSnapshot(appData);
+
+  const buildChanged =
+    snapshot.buildId !== null && snapshot.buildId !== state.lastBuildId;
+
+  const appChanged =
+    snapshot.appChangenumber !== null &&
+    snapshot.appChangenumber !== state.lastAppChangenumber;
+
+  if (buildChanged || (NOTIFY_ANY_CHANGE && appChanged)) {
+    const prefix = DISCORD_MENTION ? `${DISCORD_MENTION} ` : '';
+    const lines = [
+      `${prefix}обнаружено обновление Steam для **${snapshot.name}**`,
+      `**appid:** \`${APP_ID}\``,
+      `**global changenumber:** \`${currentGlobalChangenumber}\``,
+      `**app changenumber:** \`${snapshot.appChangenumber ?? 'n/a'}\``,
+      `**buildid:** \`${snapshot.buildId ?? 'n/a'}\``,
+      `**предыдущий buildid:** \`${state.lastBuildId ?? 'n/a'}\``,
+      `**ветки:** ${
+        snapshot.branches.length
+          ? snapshot.branches.map((x) => `\`${x}\``).join(', ')
+          : 'n/a'
+      }`,
+    ];
+
+    if (snapshot.timeUpdatedIso) {
+      lines.push(`**public updated:** ${snapshot.timeUpdatedIso}`);
+    }
+
+    await sendDiscordMessage(lines.join('\n'));
+    log(
+      `Notification sent: app=${snapshot.name}, appChange=${snapshot.appChangenumber}, build=${snapshot.buildId}`
+    );
+  } else {
+    log(
+      `Global changes detected, but target app build did not change: app=${snapshot.name}, appChange=${snapshot.appChangenumber}, build=${snapshot.buildId}`
+    );
+  }
+
+  await writeState({
+    initialized: true,
+    lastGlobalChangenumber: currentGlobalChangenumber,
+    lastAppChangenumber: snapshot.appChangenumber,
+    lastBuildId: snapshot.buildId,
+    lastName: snapshot.name,
+    lastSeenAt: new Date().toISOString(),
+  });
 }
 
-user.on('loggedOn', async () => {
-  log('Steam connected in anonymous mode');
-  await pollOnce();
+async function shutdown(user, code) {
+  try {
+    user.logOff();
+  } catch {}
+  setTimeout(() => process.exit(code), 300);
+}
 
-  if (pollTimer) clearInterval(pollTimer);
-  pollTimer = setInterval(pollOnce, POLL_INTERVAL_MS);
+async function main() {
+  const user = new SteamUser({ autoRelogin: false });
+
+  user.on('loggedOn', async () => {
+    try {
+      log(`Steam connected anonymously for appid=${APP_ID}`);
+      await runWatcher(user);
+      await shutdown(user, 0);
+    } catch (err) {
+      console.error('Watcher error:', err);
+      await shutdown(user, 1);
+    }
+  });
+
+  user.on('error', async (err) => {
+    console.error('Steam error:', err);
+    await shutdown(user, 1);
+  });
+
+  user.on('disconnected', (eresult, msg) => {
+    log(`Disconnected: ${eresult} ${msg || ''}`);
+  });
+
+  user.logOn({ anonymous: true });
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
 });
-
-user.on('disconnected', (eresult, msg) => {
-  log(`Disconnected: ${eresult} ${msg || ''}`);
-});
-
-user.on('error', (err) => {
-  console.error('Steam error:', err);
-});
-
-process.on('SIGINT', () => {
-  if (pollTimer) clearInterval(pollTimer);
-  user.logOff();
-  process.exit(0);
-});
-
-process.on('SIGTERM', () => {
-  if (pollTimer) clearInterval(pollTimer);
-  user.logOff();
-  process.exit(0);
-});
-
-log(`Starting watcher for appid=${APP_ID}`);
-user.logOn({ anonymous: true });
