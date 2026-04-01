@@ -9,8 +9,8 @@ on:
         default: false
         type: boolean
   schedule:
-    # каждые 5 минут, но со сдвигом от начала часа
-    - cron: '2,7,12,17,22,27,32,37,42,47,52,57 * * * *'
+    # каждые 10 минут, но со сдвигом от начала часа
+    - cron: '3,13,23,33,43,53 * * * *'
 
 permissions:
   contents: write
@@ -34,6 +34,12 @@ jobs:
       - name: Install dependencies
         run: npm install --no-save steam-user dotenv
 
+      - name: Debug trigger
+        run: |
+            echo "event_name=${{ github.event_name }}"
+            echo "event_schedule=${{ github.event.schedule }}"
+            date -u
+            
       - name: Run watcher
         env:
           STEAM_APP_ID: ${{ vars.STEAM_APP_ID }}
@@ -42,7 +48,7 @@ jobs:
           NOTIFY_ANY_CHANGE: 'false'
           TEST_WEBHOOK: ${{ github.event_name == 'workflow_dispatch' && inputs.test_webhook || 'false' }}
         run: node steamwtch.js
-
+        
       - name: Commit state back to repo
         run: |
           if [ ! -f steam-watch-state.json ]; then
