@@ -12,7 +12,10 @@ const NOTIFY_ANY_CHANGE =
 const TEST_WEBHOOK =
   String(process.env.TEST_WEBHOOK || 'false').toLowerCase() === 'true';
 
-const STATE_FILE = path.join(__dirname, 'steam-watch-state.json');
+const STATE_FILE = path.join(
+  __dirname,
+  process.env.STATE_FILE || 'steam-watch-state.json'
+);
 
 if (!DISCORD_WEBHOOK_URL) {
   console.error('DISCORD_WEBHOOK_URL is required');
@@ -33,6 +36,7 @@ async function readState() {
       lastGlobalChangenumber: 0,
       lastAppChangenumber: null,
       lastBuildId: null,
+      lastBranches: {},
       lastName: null,
       lastSeenAt: null,
     };
@@ -112,8 +116,58 @@ function extractSnapshot(appData) {
     timeUpdatedIso: Number.isFinite(timeUpdated)
       ? new Date(timeUpdated * 1000).toISOString()
       : null,
-    branches: Object.keys(branches).sort(),
+    branches: normalizeBranches(appData),
   };
+}
+
+function normalizeBranches(appData) {
+  const branches = appData?.appinfo?.depots?.branches || {};
+  const out = {};
+
+  for (const [name, branch] of Object.entries(branches)) {
+    out[name] = {
+        buildid:
+          branch?.buildid !== undefined && branch?.buildid !== null
+          ? String(branch.buildid)
+          : null,
+        timeupdated:
+          branch?.timeupdated !== undefined && branch?.timeupdated !== null
+          ? Number(branch.timeupdated)
+          : null,
+        pwdrequired: branch?.pwdrequired ?? null,
+        description: branch?.description ?? null,
+      };
+  }
+
+  return out;
+}
+
+function diffBranches(prev, next) {
+  const changes = [];
+  const allNames = new Set([...Object.keys(prev), ...Object.keys(next)]);
+
+  for (const name of allNames) {
+    const a = prev[name];
+    const b = next[name];
+
+    if (!a && b) {
+      changes.push(`added branch \`${name}\` (buildid=${b.buildid ?? 'n/a'})`);
+      continue;
+    }
+
+    if (a && !b) {
+      changes.push(`removed branch \`${name}\``);
+      continue;
+    }
+
+    if (JSON.stringify(a) !== JSON.stringify(b)) {
+      changes.push(
+        `changed branch \`${name}\`: buildid ${a.buildid ?? 'n/a'} -> ${b.buildid ?? 'n/a'}, timeupdated ${a.timeupdated ?? 'n/a'} -> ${b.timeupdated ?? 'n/a'}`
+      );
+    }
+  }
+
+  return changes;
 }
 
 async function fetchAppInfo(user) {
@@ -139,6 +193,7 @@ async function bootstrap(user) {
     lastGlobalChangenumber: currentGlobalChangenumber,
     lastAppChangenumber: snapshot.appChangenumber,
     lastBuildId: snapshot.buildId,
+    lastBranches: snapshot.branches,
     lastName: snapshot.name,
     lastSeenAt: new Date().toISOString(),
   });
@@ -183,7 +238,10 @@ async function runWatcher(user) {
     snapshot.appChangenumber !== null &&
     snapshot.appChangenumber !== state.lastAppChangenumber;
 
-  if (buildChanged || (NOTIFY_ANY_CHANGE && appChanged)) {
+  const branchChanges = diffBranches(state.lastBranches || {}, snapshot.branches);
+  const branchesChanged = branchChanges.length > 0;
+
+  if (buildChanged || branchesChanged || (NOTIFY_ANY_CHANGE && appChanged)) {
     const prefix = DISCORD_MENTION ? `${DISCORD_MENTION} ` : '';
     const lines = [
       `${prefix}обнаружено обновление Steam для **${snapshot.name}**`,
@@ -193,14 +251,24 @@ async function runWatcher(user) {
       `**buildid:** \`${snapshot.buildId ?? 'n/a'}\``,
       `**предыдущий buildid:** \`${state.lastBuildId ?? 'n/a'}\``,
       `**ветки:** ${
-        snapshot.branches.length
-          ? snapshot.branches.map((x) => `\`${x}\``).join(', ')
+        Object.keys(snapshot.branches).length
+          ? Object.keys(snapshot.branches)
+              .sort()
+              .map((x) => `\`${x}\``)
+              .join(', ')
           : 'n/a'
       }`,
     ];
 
     if (snapshot.timeUpdatedIso) {
       lines.push(`**public updated:** ${snapshot.timeUpdatedIso}`);
+    }
+
+    if (branchChanges.length) {
+      lines.push('**branch diff:**');
+      for (const change of branchChanges) {
+        lines.push(`- ${change}`);
+      }
     }
 
     await sendDiscordMessage(lines.join('\n'));
@@ -218,6 +286,7 @@ async function runWatcher(user) {
     lastGlobalChangenumber: currentGlobalChangenumber,
     lastAppChangenumber: snapshot.appChangenumber,
     lastBuildId: snapshot.buildId,
+    lastBranches: snapshot.branches,
     lastName: snapshot.name,
     lastSeenAt: new Date().toISOString(),
   });
