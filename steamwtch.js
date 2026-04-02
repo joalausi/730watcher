@@ -17,9 +17,10 @@ const STATE_FILE = path.join(
   process.env.STATE_FILE || 'steam-watch-state.json'
 );
 
-if (!DISCORD_WEBHOOK_URL) {
-  console.error('DISCORD_WEBHOOK_URL is required');
-  process.exit(1);
+function ensureWebhookConfigured() {
+  if (!DISCORD_WEBHOOK_URL) {
+    throw new Error('DISCORD_WEBHOOK_URL is required');
+  }
 }
 
 function log(...args) {
@@ -70,6 +71,7 @@ function parseAllowedMentions(mention) {
 }
 
 async function sendDiscordMessage(content) {
+  ensureWebhookConfigured();
   const res = await fetch(DISCORD_WEBHOOK_URL, {
     method: 'POST',
     headers: {
@@ -126,17 +128,17 @@ function normalizeBranches(appData) {
 
   for (const [name, branch] of Object.entries(branches)) {
     out[name] = {
-        buildid:
-          branch?.buildid !== undefined && branch?.buildid !== null
+      buildid:
+        branch?.buildid !== undefined && branch?.buildid !== null
           ? String(branch.buildid)
           : null,
-        timeupdated:
-          branch?.timeupdated !== undefined && branch?.timeupdated !== null
+      timeupdated:
+        branch?.timeupdated !== undefined && branch?.timeupdated !== null
           ? Number(branch.timeupdated)
           : null,
-        pwdrequired: branch?.pwdrequired ?? null,
-        description: branch?.description ?? null,
-      };
+      pwdrequired: branch?.pwdrequired ?? null,
+      description: branch?.description ?? null,
+    };
   }
 
   return out;
@@ -181,14 +183,20 @@ async function fetchAppInfo(user) {
   return appData;
 }
 
-async function bootstrap(user) {
+async function bootstrap(user, deps = {}) {
+  const {
+    fetchAppInfoFn = fetchAppInfo,
+    writeStateFn = writeState,
+    logFn = log,
+  } = deps;
+
   const changes = await user.getProductChanges(0);
   const currentGlobalChangenumber = Number(changes.currentChangenumber || 0);
 
-  const appData = await fetchAppInfo(user);
+  const appData = await fetchAppInfoFn(user);
   const snapshot = extractSnapshot(appData);
 
-  await writeState({
+  await writeStateFn({
     initialized: true,
     lastGlobalChangenumber: currentGlobalChangenumber,
     lastAppChangenumber: snapshot.appChangenumber,
@@ -198,37 +206,40 @@ async function bootstrap(user) {
     lastSeenAt: new Date().toISOString(),
   });
 
-  log(
+  logFn(
     `Bootstrapped: ${snapshot.name}, global=${currentGlobalChangenumber}, app=${snapshot.appChangenumber}, build=${snapshot.buildId}`
   );
 }
 
-async function runWatcher(user) {
+async function runWatcher(user, deps = {}) {
+  const {
+    readStateFn = readState,
+    writeStateFn = writeState,
+    fetchAppInfoFn = fetchAppInfo,
+    sendDiscordMessageFn = sendDiscordMessage,
+    logFn = log,
+  } = deps;
+
   if (TEST_WEBHOOK) {
     const prefix = DISCORD_MENTION ? `${DISCORD_MENTION} ` : '';
-    await sendDiscordMessage(
+    await sendDiscordMessageFn(
       `${prefix}тестовый webhook: GitHub Actions и Discord настроены`
     );
-    log('Test webhook sent');
+    logFn('Test webhook sent');
     return;
   }
 
-  const state = await readState();
+  const state = await readStateFn();
 
   if (!state.initialized) {
-    await bootstrap(user);
+    await bootstrap(user, { fetchAppInfoFn, writeStateFn, logFn });
     return;
   }
 
   const changes = await user.getProductChanges(state.lastGlobalChangenumber || 0);
   const currentGlobalChangenumber = Number(changes.currentChangenumber || 0);
 
-  if (!currentGlobalChangenumber || currentGlobalChangenumber === state.lastGlobalChangenumber) {
-    log('No global product changes');
-    return;
-  }
-
-  const appData = await fetchAppInfo(user);
+  const appData = await fetchAppInfoFn(user);
   const snapshot = extractSnapshot(appData);
 
   const buildChanged =
@@ -240,8 +251,13 @@ async function runWatcher(user) {
 
   const branchChanges = diffBranches(state.lastBranches || {}, snapshot.branches);
   const branchesChanged = branchChanges.length > 0;
+  const globalChanged =
+    currentGlobalChangenumber > 0 &&
+    currentGlobalChangenumber !== state.lastGlobalChangenumber;
 
-  if (buildChanged || branchesChanged || (NOTIFY_ANY_CHANGE && appChanged)) {
+ if (!globalChanged && !buildChanged && !branchesChanged && !appChanged) {
+    logFn('No global product changes and no app-level changes');
+  } else if (buildChanged || branchesChanged || (NOTIFY_ANY_CHANGE && appChanged)) {
     const prefix = DISCORD_MENTION ? `${DISCORD_MENTION} ` : '';
     const lines = [
       `${prefix}обнаружено обновление Steam для **${snapshot.name}**`,
@@ -271,17 +287,17 @@ async function runWatcher(user) {
       }
     }
 
-    await sendDiscordMessage(lines.join('\n'));
-    log(
+    await sendDiscordMessageFn(lines.join('\n'));
+    logFn(
       `Notification sent: app=${snapshot.name}, appChange=${snapshot.appChangenumber}, build=${snapshot.buildId}`
     );
   } else {
-    log(
-      `Global changes detected, but target app build did not change: app=${snapshot.name}, appChange=${snapshot.appChangenumber}, build=${snapshot.buildId}`
+    logFn(
+      `Changes observed without notification: globalChanged=${globalChanged}, appChanged=${appChanged}, buildChanged=${buildChanged}, branchesChanged=${branchesChanged}`
     );
   }
 
-  await writeState({
+  await writeStateFn({
     initialized: true,
     lastGlobalChangenumber: currentGlobalChangenumber,
     lastAppChangenumber: snapshot.appChangenumber,
@@ -300,6 +316,7 @@ async function shutdown(user, code) {
 }
 
 async function main() {
+  ensureWebhookConfigured();
   const user = new SteamUser({ autoRelogin: false });
 
   user.on('loggedOn', async () => {
@@ -325,7 +342,18 @@ async function main() {
   user.logOn({ anonymous: true });
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+if (require.main === module) {
+  main().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}
+
+module.exports = {
+  bootstrap,
+  diffBranches,
+  extractSnapshot,
+  normalizeBranches,
+  parseAllowedMentions,
+  runWatcher,
+};
