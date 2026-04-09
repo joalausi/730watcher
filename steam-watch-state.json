@@ -1,7 +1,7 @@
 {
   "initialized": true,
   "lastGlobalChangenumber": 0,
-  "lastAppChangenumber": 34856313,
+  "lastAppChangenumber": 35134489,
   "lastBuildId": "22627914",
   "lastBranches": {
     "public": {
@@ -107,8 +107,8 @@
       "description": "1.41.4.1"
     },
     "animgraph_2_beta": {
-      "buildid": "22628441",
-      "timeupdated": 1775171460,
+      "buildid": "22720547",
+      "timeupdated": 1775776564,
       "pwdrequired": null,
       "description": "Animgraph 2 Beta"
     },
@@ -120,5 +120,5 @@
     }
   },
   "lastName": "Counter-Strike 2",
-  "lastSeenAt": "2026-04-09T23:01:14.047Z"
+  "lastSeenAt": "2026-04-09T23:50:02.441Z"
 }
