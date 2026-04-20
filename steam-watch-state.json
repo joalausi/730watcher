@@ -1,12 +1,12 @@
 {
   "initialized": true,
   "lastGlobalChangenumber": 0,
-  "lastAppChangenumber": 35344722,
-  "lastBuildId": "22627914",
+  "lastAppChangenumber": 35351742,
+  "lastBuildId": "22876476",
   "lastBranches": {
     "public": {
-      "buildid": "22627914",
-      "timeupdated": 1775168731,
+      "buildid": "22876476",
+      "timeupdated": 1776725885,
       "pwdrequired": null,
       "description": null
     },
@@ -104,13 +104,13 @@
       "buildid": "22627914",
       "timeupdated": 1775168731,
       "pwdrequired": null,
-      "description": "1.41.4.1"
+      "description": "Game version 1.41.4.1 (19-Apr-2026)"
     },
-    "animgraph_2_beta": {
-      "buildid": "22840751",
-      "timeupdated": 1776458842,
+    "1.41.5.1": {
+      "buildid": "22876476",
+      "timeupdated": 1776725885,
       "pwdrequired": null,
-      "description": "Animgraph 2 Beta"
+      "description": "1.41.5.1"
     },
     "csgo": {
       "buildid": "12426195",
@@ -120,5 +120,5 @@
     }
   },
   "lastName": "Counter-Strike 2",
-  "lastSeenAt": "2026-04-20T22:11:22.071Z"
+  "lastSeenAt": "2026-04-20T23:04:14.522Z"
 }
