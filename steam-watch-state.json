@@ -1,12 +1,12 @@
 {
   "initialized": true,
   "lastGlobalChangenumber": 0,
-  "lastAppChangenumber": 35351742,
-  "lastBuildId": "22876476",
+  "lastAppChangenumber": 35353505,
+  "lastBuildId": "22877907",
   "lastBranches": {
     "public": {
-      "buildid": "22876476",
-      "timeupdated": 1776725885,
+      "buildid": "22877907",
+      "timeupdated": 1776733851,
       "pwdrequired": null,
       "description": null
     },
@@ -34,72 +34,6 @@
       "pwdrequired": null,
       "description": " Game version 1.41.2.9 (19-Jan-2026)"
     },
-    "1.41.3.0": {
-      "buildid": "21593048",
-      "timeupdated": 1769037099,
-      "pwdrequired": null,
-      "description": "1.41.3.0"
-    },
-    "1.41.3.1": {
-      "buildid": "21595680",
-      "timeupdated": 1769051372,
-      "pwdrequired": null,
-      "description": "1.41.3.1"
-    },
-    "1.41.3.2": {
-      "buildid": "21626952",
-      "timeupdated": 1769215469,
-      "pwdrequired": null,
-      "description": "1.41.3.2"
-    },
-    "1.41.3.3": {
-      "buildid": "21669343",
-      "timeupdated": 1769534998,
-      "pwdrequired": null,
-      "description": "1.41.3.3"
-    },
-    "1.41.3.4": {
-      "buildid": "21708006",
-      "timeupdated": 1769732303,
-      "pwdrequired": null,
-      "description": "1.41.3.4"
-    },
-    "1.41.3.5": {
-      "buildid": "21868850",
-      "timeupdated": 1770747446,
-      "pwdrequired": null,
-      "description": "1.41.3.5"
-    },
-    "1.41.3.6": {
-      "buildid": "22063930",
-      "timeupdated": 1771890053,
-      "pwdrequired": null,
-      "description": "1.41.3.6"
-    },
-    "1.41.3.7": {
-      "buildid": "22099296",
-      "timeupdated": 1772745238,
-      "pwdrequired": null,
-      "description": "1.41.3.7"
-    },
-    "1.41.3.8": {
-      "buildid": "22266770",
-      "timeupdated": 1773086401,
-      "pwdrequired": null,
-      "description": "1.41.3.8"
-    },
-    "1.41.3.9": {
-      "buildid": "22303696",
-      "timeupdated": 1773270157,
-      "pwdrequired": null,
-      "description": "1.41.3.9"
-    },
-    "1.41.4.0": {
-      "buildid": "22370414",
-      "timeupdated": 1773698910,
-      "pwdrequired": null,
-      "description": "1.41.4.0"
-    },
     "1.41.4.1": {
       "buildid": "22627914",
       "timeupdated": 1775168731,
@@ -112,6 +46,12 @@
       "pwdrequired": null,
       "description": "1.41.5.1"
     },
+    "1.41.5.2": {
+      "buildid": "22877907",
+      "timeupdated": 1776733851,
+      "pwdrequired": null,
+      "description": "1.41.5.2"
+    },
     "csgo": {
       "buildid": "12426195",
       "timeupdated": 1755201816,
@@ -120,5 +60,5 @@
     }
   },
   "lastName": "Counter-Strike 2",
-  "lastSeenAt": "2026-04-20T23:58:00.417Z"
+  "lastSeenAt": "2026-04-21T03:37:19.905Z"
 }
