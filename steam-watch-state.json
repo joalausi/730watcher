@@ -1,7 +1,7 @@
 {
   "initialized": true,
   "lastGlobalChangenumber": 0,
-  "lastAppChangenumber": 35744380,
+  "lastAppChangenumber": 35749617,
   "lastBuildId": "23135875",
   "lastBranches": {
     "public": {
@@ -108,5 +108,5 @@
     }
   },
   "lastName": "Counter-Strike 2",
-  "lastSeenAt": "2026-05-08T20:12:19.159Z"
+  "lastSeenAt": "2026-05-08T21:17:24.020Z"
 }
