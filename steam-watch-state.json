@@ -1,12 +1,12 @@
 {
   "initialized": true,
   "lastGlobalChangenumber": 0,
-  "lastAppChangenumber": 37153864,
-  "lastBuildId": "24122613",
+  "lastAppChangenumber": 37155449,
+  "lastBuildId": "24134959",
   "lastBranches": {
     "public": {
-      "buildid": "24122613",
-      "timeupdated": 1783578345,
+      "buildid": "24134959",
+      "timeupdated": 1783633539,
       "pwdrequired": null,
       "description": null
     },
@@ -52,6 +52,12 @@
       "pwdrequired": null,
       "description": "1.41.6.8"
     },
+    "1.41.6.9": {
+      "buildid": "24134959",
+      "timeupdated": 1783633539,
+      "pwdrequired": null,
+      "description": "1.41.6.9"
+    },
     "csgo": {
       "buildid": "12426195",
       "timeupdated": 1755201816,
@@ -60,5 +66,5 @@
     }
   },
   "lastName": "Counter-Strike 2",
-  "lastSeenAt": "2026-07-09T20:52:23.936Z"
+  "lastSeenAt": "2026-07-09T22:16:33.785Z"
 }
