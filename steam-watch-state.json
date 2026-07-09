@@ -1,12 +1,12 @@
 {
   "initialized": true,
   "lastGlobalChangenumber": 0,
-  "lastAppChangenumber": 37131324,
-  "lastBuildId": "24119203",
+  "lastAppChangenumber": 37135874,
+  "lastBuildId": "24122613",
   "lastBranches": {
     "public": {
-      "buildid": "24119203",
-      "timeupdated": 1783558421,
+      "buildid": "24122613",
+      "timeupdated": 1783578345,
       "pwdrequired": null,
       "description": null
     },
@@ -65,8 +65,8 @@
       "description": "Game version 1.40.8.8 (06-Jul-2026)"
     },
     "1.41.6.8": {
-      "buildid": "24116939",
-      "timeupdated": 1783550992,
+      "buildid": "24122613",
+      "timeupdated": 1783578345,
       "pwdrequired": null,
       "description": "1.41.6.8"
     },
@@ -78,5 +78,5 @@
     }
   },
   "lastName": "Counter-Strike 2",
-  "lastSeenAt": "2026-07-09T05:13:22.999Z"
+  "lastSeenAt": "2026-07-09T08:49:08.649Z"
 }
