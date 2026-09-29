@@ -1,12 +1,12 @@
 {
   "initialized": true,
   "lastGlobalChangenumber": 0,
-  "lastAppChangenumber": 39211200,
-  "lastBuildId": "25537370",
+  "lastAppChangenumber": 39288808,
+  "lastBuildId": "25588766",
   "lastBranches": {
     "public": {
-      "buildid": "25537370",
-      "timeupdated": 1790373258,
+      "buildid": "25588766",
+      "timeupdated": 1790635075,
       "pwdrequired": null,
       "description": null
     },
@@ -52,29 +52,17 @@
       "pwdrequired": null,
       "description": "Game version 1.41.8.1 (21-Sep-2026)"
     },
-    "1.41.8.2": {
-      "buildid": "25472966",
-      "timeupdated": 1790132518,
-      "pwdrequired": null,
-      "description": "1.41.8.2"
-    },
-    "1.41.8.3": {
-      "buildid": "25492732",
-      "timeupdated": 1790204788,
-      "pwdrequired": null,
-      "description": "1.41.8.3"
-    },
-    "1.41.8.4": {
-      "buildid": "25515854",
-      "timeupdated": 1790287799,
-      "pwdrequired": null,
-      "description": "1.41.8.4"
-    },
     "1.41.8.5": {
       "buildid": "25537370",
       "timeupdated": 1790373258,
       "pwdrequired": null,
       "description": "1.41.8.5"
+    },
+    "1.41.8.6": {
+      "buildid": "25588766",
+      "timeupdated": 1790635075,
+      "pwdrequired": null,
+      "description": "1.41.8.6"
     },
     "csgo": {
       "buildid": "12426195",
@@ -84,5 +72,5 @@
     }
   },
   "lastName": "Counter-Strike 2",
-  "lastSeenAt": "2026-09-28T22:32:02.820Z"
+  "lastSeenAt": "2026-09-29T02:15:43.978Z"
 }
