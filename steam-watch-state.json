@@ -1,12 +1,12 @@
 {
   "initialized": true,
   "lastGlobalChangenumber": 0,
-  "lastAppChangenumber": 39354625,
-  "lastBuildId": "25588766",
+  "lastAppChangenumber": 39363344,
+  "lastBuildId": "25640462",
   "lastBranches": {
     "public": {
-      "buildid": "25588766",
-      "timeupdated": 1790635075,
+      "buildid": "25640462",
+      "timeupdated": 1790812285,
       "pwdrequired": null,
       "description": null
     },
@@ -52,17 +52,17 @@
       "pwdrequired": null,
       "description": "Game version 1.41.8.1 (21-Sep-2026)"
     },
-    "1.41.8.5": {
-      "buildid": "25537370",
-      "timeupdated": 1790373258,
-      "pwdrequired": null,
-      "description": "1.41.8.5"
-    },
     "1.41.8.6": {
       "buildid": "25588766",
       "timeupdated": 1790635075,
       "pwdrequired": null,
       "description": "1.41.8.6"
+    },
+    "1.41.8.8": {
+      "buildid": "25640462",
+      "timeupdated": 1790812285,
+      "pwdrequired": null,
+      "description": "1.41.8.8"
     },
     "csgo": {
       "buildid": "12426195",
@@ -72,5 +72,5 @@
     }
   },
   "lastName": "Counter-Strike 2",
-  "lastSeenAt": "2026-09-30T20:21:24.031Z"
+  "lastSeenAt": "2026-10-01T00:00:30.334Z"
 }
